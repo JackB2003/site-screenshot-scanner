@@ -14,6 +14,12 @@ const NAV_TIMEOUT_MS = 30000;
 
 const SKIP_EXT = /\.(pdf|jpe?g|png|gif|svg|webp|bmp|css|js|mjs|json|xml|zip|rar|7z|gz|mp4|mp3|avi|mov|wmv|woff2?|ttf|eot|ico|csv|docx?|xlsx?|pptx?)(\?|#|$)/i;
 
+const VIEWPORTS = {
+  desktop: { width: 1440, height: 900 },
+  tablet: { width: 768, height: 1024 },
+  mobile: { width: 375, height: 812 },
+};
+
 const jobs = new Map();
 let browser;
 
@@ -22,7 +28,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.post('/api/scan', async (req, res) => {
-  let { url, maxPages } = req.body || {};
+  let { url, maxPages, viewports } = req.body || {};
   if (!url || typeof url !== 'string') {
     return res.status(400).json({ error: 'URL is required' });
   }
@@ -35,6 +41,10 @@ app.post('/api/scan', async (req, res) => {
   }
   maxPages = Math.min(Math.max(parseInt(maxPages, 10) || 50, 1), 200);
 
+  viewports = Array.isArray(viewports) ? viewports.filter((v) => VIEWPORTS[v]) : [];
+  if (!viewports.length) viewports = ['desktop'];
+  viewports = [...new Set(viewports)];
+
   const jobId = crypto.randomUUID();
   const dir = path.join(SCREENSHOTS_ROOT, jobId);
   fs.mkdirSync(dir, { recursive: true });
@@ -43,11 +53,13 @@ app.post('/api/scan', async (req, res) => {
     id: jobId,
     url,
     maxPages,
+    viewports,
     dir,
     events: [],
     emitter: new EventEmitter(),
     status: 'running',
     results: [],
+    captureCounter: 0,
     createdAt: Date.now(),
   };
   job.emitter.setMaxListeners(20);
@@ -199,7 +211,7 @@ function normalizeUrl(href) {
   return s;
 }
 
-function slugFor(url, index) {
+function slugFor(url, index, viewport) {
   let slug;
   try {
     const u = new URL(url);
@@ -216,7 +228,7 @@ function slugFor(url, index) {
     slug = 'page';
   }
   if (!slug) slug = 'page';
-  return `${String(index + 1).padStart(3, '0')}-${slug}.png`;
+  return `${String(index + 1).padStart(3, '0')}-${slug}--${viewport}.png`;
 }
 
 async function autoScroll(page) {
@@ -242,28 +254,35 @@ async function autoScroll(page) {
 
 // ---------- capture ----------
 
-async function captureFixed(urls, job, context) {
+async function captureFixed(urls, job, context, viewport) {
   let idx = 0;
-  let completed = 0;
-  const total = urls.length;
+  const dims = VIEWPORTS[viewport];
 
   const worker = async () => {
     while (idx < urls.length) {
       const myIndex = idx++;
       const url = urls[myIndex];
-      pushEvent(job, { type: 'visiting', url });
+      pushEvent(job, { type: 'visiting', url, viewport });
       const page = await context.newPage();
       try {
+        await page.setViewportSize(dims);
         await page.goto(url, { waitUntil: 'load', timeout: NAV_TIMEOUT_MS });
         await autoScroll(page);
-        const file = slugFor(url, myIndex);
+        const file = slugFor(url, myIndex, viewport);
         await page.screenshot({ path: path.join(job.dir, file), fullPage: true });
-        completed++;
-        job.results.push({ url, file });
-        pushEvent(job, { type: 'captured', url, file, index: completed, total });
+        job.captureCounter++;
+        job.results.push({ url, file, viewport });
+        pushEvent(job, { type: 'captured', url, file, viewport, index: job.captureCounter, total: job.totalCaptures });
       } catch (e) {
-        completed++;
-        pushEvent(job, { type: 'error', url, message: String((e && e.message) || e), index: completed, total });
+        job.captureCounter++;
+        pushEvent(job, {
+          type: 'error',
+          url,
+          viewport,
+          message: String((e && e.message) || e),
+          index: job.captureCounter,
+          total: job.totalCaptures,
+        });
       } finally {
         await page.close().catch(() => {});
       }
@@ -308,11 +327,13 @@ async function discoverLinks(page, originHost) {
   return [...found].filter((l) => isCandidateLink(l, originHost));
 }
 
-async function crawlAndCapture(startUrl, job, context, origin) {
+async function crawlAndCapture(startUrl, job, context, origin, viewport) {
+  const dims = VIEWPORTS[viewport];
   const originHost = new URL(origin).host;
   const visited = new Set();
   const queue = [startUrl];
   let capturedCount = 0;
+  const capturedUrls = [];
 
   while (queue.length && capturedCount < job.maxPages) {
     const url = queue.shift();
@@ -320,16 +341,19 @@ async function crawlAndCapture(startUrl, job, context, origin) {
     if (visited.has(norm)) continue;
     visited.add(norm);
 
-    pushEvent(job, { type: 'visiting', url });
+    pushEvent(job, { type: 'visiting', url, viewport });
     const page = await context.newPage();
     try {
+      await page.setViewportSize(dims);
       await page.goto(url, { waitUntil: 'load', timeout: NAV_TIMEOUT_MS });
       await autoScroll(page);
-      const file = slugFor(url, capturedCount);
+      const file = slugFor(url, capturedCount, viewport);
       await page.screenshot({ path: path.join(job.dir, file), fullPage: true });
       capturedCount++;
-      job.results.push({ url, file });
-      pushEvent(job, { type: 'captured', url, file, index: capturedCount, total: job.maxPages });
+      job.captureCounter++;
+      job.results.push({ url, file, viewport });
+      capturedUrls.push(url);
+      pushEvent(job, { type: 'captured', url, file, viewport, index: job.captureCounter, total: job.totalCaptures });
 
       if (capturedCount < job.maxPages) {
         const links = await discoverLinks(page, originHost);
@@ -344,11 +368,21 @@ async function crawlAndCapture(startUrl, job, context, origin) {
         if (added) pushEvent(job, { type: 'discovered', count: queue.length, cumulative: true });
       }
     } catch (e) {
-      pushEvent(job, { type: 'error', url, message: String((e && e.message) || e) });
+      job.captureCounter++;
+      pushEvent(job, {
+        type: 'error',
+        url,
+        viewport,
+        message: String((e && e.message) || e),
+        index: job.captureCounter,
+        total: job.totalCaptures,
+      });
     } finally {
       await page.close().catch(() => {});
     }
   }
+
+  return capturedUrls;
 }
 
 async function runJob(job) {
@@ -371,15 +405,29 @@ async function runJob(job) {
   });
 
   try {
+    const [firstViewport, ...restViewports] = job.viewports;
+    let urls;
+
     if (sitemapUrls && sitemapUrls.length) {
-      const urls = sitemapUrls.slice(0, job.maxPages);
+      urls = sitemapUrls.slice(0, job.maxPages);
       pushEvent(job, { type: 'discovered', count: urls.length, total: sitemapUrls.length, source: 'sitemap' });
-      await captureFixed(urls, job, context);
+      job.totalCaptures = urls.length * job.viewports.length;
+      pushEvent(job, { type: 'plan', pages: urls.length, viewports: job.viewports, totalCaptures: job.totalCaptures });
+      await captureFixed(urls, job, context, firstViewport);
     } else {
       pushEvent(job, { type: 'status', message: 'No sitemap found — crawling links from the homepage...' });
-      await crawlAndCapture(job.url, job, context, origin);
+      // Total is unknown until the first (discovery) pass finishes, so the
+      // 'plan' event for a crawl-discovered site fires after that pass below.
+      urls = await crawlAndCapture(job.url, job, context, origin, firstViewport);
+      job.totalCaptures = urls.length * job.viewports.length;
+      pushEvent(job, { type: 'plan', pages: urls.length, viewports: job.viewports, totalCaptures: job.totalCaptures });
     }
-    pushEvent(job, { type: 'done', captured: job.results.length });
+
+    for (const viewport of restViewports) {
+      await captureFixed(urls, job, context, viewport);
+    }
+
+    pushEvent(job, { type: 'done', captured: job.results.length, pages: urls.length, viewports: job.viewports });
   } finally {
     await context.close().catch(() => {});
   }

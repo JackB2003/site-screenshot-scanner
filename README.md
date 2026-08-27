@@ -27,7 +27,7 @@ PORT=8080 npm start
 ## Using it
 
 1. Open the app in your browser.
-2. Enter a URL and, optionally, a max page count.
+2. Enter a URL, pick which device sizes to capture (Desktop, Tablet, Mobile), and optionally a max page count.
 3. Watch pages get discovered and captured live.
 4. Click any thumbnail for a full-size view, or download everything as a ZIP.
 
@@ -48,9 +48,10 @@ If your local dev server doesn't have a sitemap.xml (most don't), the scanner au
 ## Features
 
 - **Zero-config discovery.** Reads `sitemap.xml` / `sitemap_index.xml` first, including nested sitemap indexes. No sitemap? It falls back to crawling links from the homepage, so it works on SPAs and JS-rendered sites too, not just static HTML.
+- **Responsive capture.** Shoot each page at Desktop (1440×900), Tablet (768×1024), and/or Mobile (375×812) in the same scan. Page discovery only runs once; the extra viewports just reshoot the same page list, so adding devices doesn't repeat the crawl.
 - **True full-page capture.** Auto-scrolls each page before shooting so lazy-loaded content, images, and long layouts are captured in full, not just the first viewport.
 - **Live progress.** A Server-Sent Events stream drives a terminal-style log and running counters (found / captured / errors) as the scan happens.
-- **Gallery + ZIP export.** Thumbnails populate as each page finishes. Download everything as a single ZIP when the scan completes.
+- **Gallery + ZIP export.** Thumbnails populate as each page finishes, tagged by viewport with filter tabs when more than one device is selected. Download everything as a single ZIP when the scan completes.
 - **Same-domain safe.** Only follows links on the target's own domain, and automatically skips non-page assets (images, PDFs, stylesheets, scripts, fonts, media).
 - **Configurable scope.** Cap a scan anywhere from 1 to 200 pages per run.
 
@@ -92,7 +93,7 @@ The few free tools that will crawl a whole site on their own tend to be a browse
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/scan` | Start a scan. Body: `{ "url": string, "maxPages"?: number }`. Returns `{ jobId }`. |
+| `POST` | `/api/scan` | Start a scan. Body: `{ "url": string, "maxPages"?: number, "viewports"?: ("desktop"\|"tablet"\|"mobile")[] }`. Defaults to `["desktop"]`. Returns `{ jobId }`. |
 | `GET` | `/api/scan/:id/events` | SSE stream of scan progress for a job. |
 | `GET` | `/api/scan/:id/shots/:file` | Fetch a single captured screenshot. |
 | `GET` | `/api/scan/:id/zip` | Download all screenshots for a job as a ZIP. |

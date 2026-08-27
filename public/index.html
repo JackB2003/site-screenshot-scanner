@@ -20,6 +20,12 @@
     <form id="scanForm">
       <label for="url">Website URL</label>
       <input type="text" id="url" name="url" placeholder="example.com" required autocomplete="off" />
+      <div class="viewports">
+        <span class="viewports-label">Capture at</span>
+        <label class="checkbox"><input type="checkbox" name="viewport" value="desktop" checked /> Desktop <span class="dims">1440&times;900</span></label>
+        <label class="checkbox"><input type="checkbox" name="viewport" value="tablet" /> Tablet <span class="dims">768&times;1024</span></label>
+        <label class="checkbox"><input type="checkbox" name="viewport" value="mobile" /> Mobile <span class="dims">375&times;812</span></label>
+      </div>
       <div class="advanced">
         <label for="maxPages">Max pages</label>
         <input type="number" id="maxPages" name="maxPages" value="50" min="1" max="200" />
@@ -53,6 +59,7 @@
         <button id="newScan">New Scan</button>
       </div>
     </div>
+    <div id="viewportTabs" class="viewport-tabs hidden"></div>
     <div id="gallery" class="gallery"></div>
   </section>
 </main>

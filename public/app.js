@@ -9,6 +9,7 @@ const statFound = document.getElementById('statFound');
 const statCaptured = document.getElementById('statCaptured');
 const statErrors = document.getElementById('statErrors');
 const gallery = document.getElementById('gallery');
+const viewportTabs = document.getElementById('viewportTabs');
 const resultsTitle = document.getElementById('resultsTitle');
 const downloadZipBtn = document.getElementById('downloadZip');
 const newScanBtn = document.getElementById('newScan');
@@ -16,11 +17,14 @@ const lightbox = document.getElementById('lightbox');
 const lightboxImg = document.getElementById('lightboxImg');
 const lightboxClose = document.getElementById('lightboxClose');
 
+const VIEWPORT_LABELS = { desktop: 'Desktop', tablet: 'Tablet', mobile: 'Mobile' };
+
 let currentJobId = null;
 let foundCount = 0;
 let capturedCount = 0;
 let errorCount = 0;
 let maxPagesTarget = 50;
+let activeViewportFilter = 'all';
 
 function logLine(text, cls = '') {
   const div = document.createElement('div');
@@ -48,12 +52,18 @@ form.addEventListener('submit', async (e) => {
   const maxPages = parseInt(document.getElementById('maxPages').value, 10) || 50;
   if (!url) return;
 
-  maxPagesTarget = maxPages;
+  let viewports = [...form.querySelectorAll('input[name="viewport"]:checked')].map((el) => el.value);
+  if (!viewports.length) viewports = ['desktop'];
+
+  maxPagesTarget = maxPages * viewports.length;
   foundCount = 0;
   capturedCount = 0;
   errorCount = 0;
   terminal.innerHTML = '';
   gallery.innerHTML = '';
+  viewportTabs.innerHTML = '';
+  viewportTabs.classList.add('hidden');
+  activeViewportFilter = 'all';
   updateStats();
   scanBtn.disabled = true;
 
@@ -61,7 +71,7 @@ form.addEventListener('submit', async (e) => {
     const res = await fetch('api/scan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, maxPages }),
+      body: JSON.stringify({ url, maxPages, viewports }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to start scan');
@@ -105,13 +115,19 @@ function handleEvent(evt) {
       );
       updateStats();
       break;
+    case 'plan':
+      maxPagesTarget = evt.totalCaptures;
+      foundCount = evt.totalCaptures;
+      setupViewportTabs(evt.viewports);
+      updateStats();
+      break;
     case 'visiting':
-      logLine(`Scanning ${evt.url}`);
+      logLine(`Scanning ${evt.url}${evt.viewport ? ` (${VIEWPORT_LABELS[evt.viewport] || evt.viewport})` : ''}`);
       break;
     case 'captured':
       capturedCount = evt.index;
-      foundCount = Math.max(foundCount, evt.total || evt.index);
-      logLine(`Captured ${evt.url}`, 'ok');
+      if (evt.total) maxPagesTarget = evt.total;
+      logLine(`Captured ${evt.url}${evt.viewport ? ` (${VIEWPORT_LABELS[evt.viewport] || evt.viewport})` : ''}`, 'ok');
       updateStats();
       addThumb(evt);
       break;
@@ -121,7 +137,12 @@ function handleEvent(evt) {
       updateStats();
       break;
     case 'done':
-      logLine(`Scan complete — ${evt.captured} page(s) captured`, 'status');
+      logLine(
+        `Scan complete — ${evt.captured} screenshot(s)${evt.pages ? ` across ${evt.pages} page(s)` : ''}${
+          evt.viewports && evt.viewports.length > 1 ? ` × ${evt.viewports.length} viewport(s)` : ''
+        }`,
+        'status'
+      );
       break;
     case 'fatal':
       logLine(`Fatal error: ${evt.message}`, 'err');
@@ -131,14 +152,56 @@ function handleEvent(evt) {
   }
 }
 
+function setupViewportTabs(viewports) {
+  if (!viewports || viewports.length < 2) return;
+  viewportTabs.innerHTML = '';
+  viewportTabs.classList.remove('hidden');
+
+  const makeTab = (value, label) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'vtab' + (value === 'all' ? ' active' : '');
+    btn.dataset.viewport = value;
+    btn.textContent = label;
+    btn.addEventListener('click', () => {
+      activeViewportFilter = value;
+      viewportTabs.querySelectorAll('.vtab').forEach((t) => t.classList.toggle('active', t === btn));
+      applyViewportFilter();
+    });
+    viewportTabs.appendChild(btn);
+  };
+
+  makeTab('all', 'All');
+  viewports.forEach((v) => makeTab(v, VIEWPORT_LABELS[v] || v));
+}
+
+function applyViewportFilter() {
+  gallery.querySelectorAll('.thumb').forEach((el) => {
+    const show = activeViewportFilter === 'all' || el.dataset.viewport === activeViewportFilter;
+    el.classList.toggle('hidden', !show);
+  });
+}
+
 function addThumb(evt) {
   const div = document.createElement('div');
   div.className = 'thumb';
+  if (evt.viewport) div.dataset.viewport = evt.viewport;
+  if (evt.viewport && !(activeViewportFilter === 'all' || activeViewportFilter === evt.viewport)) {
+    div.classList.add('hidden');
+  }
+
   const img = document.createElement('img');
   img.src = `api/scan/${currentJobId}/shots/${evt.file}`;
   img.loading = 'lazy';
   img.alt = evt.url;
   div.appendChild(img);
+
+  if (evt.viewport) {
+    const badge = document.createElement('span');
+    badge.className = 'thumb-badge';
+    badge.textContent = VIEWPORT_LABELS[evt.viewport] || evt.viewport;
+    div.appendChild(badge);
+  }
 
   const info = document.createElement('div');
   info.className = 'thumb-info';
@@ -168,7 +231,7 @@ lightbox.addEventListener('click', (e) => {
 function finishScan() {
   progressPanel.classList.add('hidden');
   resultsPanel.classList.remove('hidden');
-  resultsTitle.textContent = `Results — ${capturedCount} page(s)${errorCount ? `, ${errorCount} error(s)` : ''}`;
+  resultsTitle.textContent = `Results — ${capturedCount} screenshot(s)${errorCount ? `, ${errorCount} error(s)` : ''}`;
   scanBtn.disabled = false;
 }
 

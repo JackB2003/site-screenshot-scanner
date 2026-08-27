@@ -1,6 +1,6 @@
 # Site Screenshot Scanner
 
-Full-page screenshots of an entire website, from a single URL. No page list to maintain, no manual capturing. Point it at a domain and it finds every page itself.
+Full-page screenshots of an entire website, from a single URL. Free and self-hosted, with no account, no API key, and no per-screenshot charge. No page list to maintain either. Point it at a domain and it finds every page itself, unlike most screenshot tools where you supply each URL one at a time.
 
 ![Landing screen](docs/screenshots/landing.png)
 
@@ -39,6 +39,20 @@ PORT=8080 npm start
 - **Gallery + ZIP export.** Thumbnails populate as each page finishes. Download everything as a single ZIP when the scan completes.
 - **Same-domain safe.** Only follows links on the target's own domain, and automatically skips non-page assets (images, PDFs, stylesheets, scripts, fonts, media).
 - **Configurable scope.** Cap a scan anywhere from 1 to 200 pages per run.
+
+## How this compares to other screenshot tools
+
+Most website screenshot tools are paid APIs: you sign up, get an API key, and pay per screenshot. [Urlbox](https://urlbox.com/pricing), [ScreenshotOne](https://screenshotone.com/), [URL2PNG](https://www.url2png.com/), and similar services typically start around $17 to $49 a month for a few thousand images, and every one of them expects you to already know and submit each page's URL. Finding the pages is left to you.
+
+The few free tools that will crawl a whole site on their own tend to be a browser extension you run tab by tab, or a small unmaintained script. Neither gives you a live progress view, a gallery, or a one-click ZIP of the results.
+
+| | Site Screenshot Scanner | Typical screenshot APIs |
+|---|---|---|
+| Cost | Free, self-hosted | Paid, billed per screenshot |
+| Page discovery | Finds every page itself (sitemap + link crawl) | You supply each URL yourself |
+| Setup | Clone and run | Sign up, get an API key |
+| Full-site scan | Point it at a domain | One request per page, every time |
+| Output | Live gallery + one-click ZIP | Raw image files or URLs, one per request |
 
 ## Screenshots
 

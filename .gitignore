@@ -1,5 +1,5 @@
 node_modules/
-screenshots/
+/screenshots/
 *.log
 .env
 .DS_Store

@@ -1,6 +1,6 @@
 # Site Screenshot Scanner
 
-Full-page screenshots of an entire website, from a single URL. Free and self-hosted, with no account, no API key, and no per-screenshot charge. No page list to maintain either. Point it at a domain and it finds every page itself, unlike most screenshot tools where you supply each URL one at a time.
+Full-page screenshots of an entire website, from a single URL. Free and self-hosted, with no account, no API key, and no per-screenshot charge. No page list to maintain either. Point it at a URL, public or local, and it finds every page itself, unlike most screenshot tools where you supply each page's URL one at a time.
 
 ![Landing screen](docs/screenshots/landing.png)
 
@@ -16,7 +16,7 @@ npx playwright install --with-deps chromium
 npm start
 ```
 
-Open `http://localhost:3012`, enter a domain, and watch it go. That's the whole setup.
+Open `http://localhost:3012`, enter a URL, and watch it go. That's the whole setup.
 
 Want a different port?
 
@@ -27,9 +27,23 @@ PORT=8080 npm start
 ## Using it
 
 1. Open the app in your browser.
-2. Enter a domain (e.g. `example.com`) and, optionally, a max page count.
+2. Enter a URL and, optionally, a max page count.
 3. Watch pages get discovered and captured live.
 4. Click any thumbnail for a full-size view, or download everything as a ZIP.
+
+### Scanning a local site
+
+You don't need a live public domain. Anything the machine running this tool can reach works, including a site running on your own computer.
+
+Type the full address with `http://` (not just a bare domain) so it isn't mistaken for a public site and upgraded to `https://`:
+
+```
+http://localhost:3000
+http://127.0.0.1:8080
+http://192.168.1.50:5173
+```
+
+If your local dev server doesn't have a sitemap.xml (most don't), the scanner automatically falls back to crawling links from the homepage, so it still finds every page on its own.
 
 ## Features
 
@@ -51,7 +65,7 @@ The few free tools that will crawl a whole site on their own tend to be a browse
 | Cost | Free, self-hosted | Paid, billed per screenshot |
 | Page discovery | Finds every page itself (sitemap + link crawl) | You supply each URL yourself |
 | Setup | Clone and run | Sign up, get an API key |
-| Full-site scan | Point it at a domain | One request per page, every time |
+| Full-site scan | Point it at a URL, public or local | One request per page, every time |
 | Output | Live gallery + one-click ZIP | Raw image files or URLs, one per request |
 
 ## Screenshots

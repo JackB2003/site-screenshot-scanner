@@ -1,0 +1,21 @@
+{
+  "name": "site-screenshot-scanner",
+  "version": "1.0.0",
+  "description": "Full-page screenshots of every page on a website, from a single URL — sitemap-first discovery with a link-crawl fallback for JS-rendered sites.",
+  "private": false,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JackB2003/site-screenshot-scanner.git"
+  },
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "express": "^4.21.2",
+    "playwright": "^1.48.0"
+  }
+}

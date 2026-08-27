@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Site Screenshot Scanner</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="scanlines"></div>
+
+<header class="topbar">
+  <div class="brand"><span class="brand-dot"></span> SITE SCANNER</div>
+</header>
+
+<main class="container">
+  <section id="scan-form" class="panel">
+    <h1>Full-Page Site Screenshots</h1>
+    <p class="subtitle">Enter a URL — it finds every page on the site and captures a full-page screenshot of each.</p>
+    <form id="scanForm">
+      <label for="url">Website URL</label>
+      <input type="text" id="url" name="url" placeholder="example.com" required autocomplete="off" />
+      <div class="advanced">
+        <label for="maxPages">Max pages</label>
+        <input type="number" id="maxPages" name="maxPages" value="50" min="1" max="200" />
+      </div>
+      <button type="submit" id="scanBtn">Start Scan</button>
+    </form>
+  </section>
+
+  <section id="scan-progress" class="panel hidden">
+    <div class="radar-wrap">
+      <div class="radar">
+        <div class="radar-ring"></div>
+        <div class="radar-ring ring2"></div>
+        <div class="radar-sweep"></div>
+      </div>
+      <div class="scan-stats">
+        <div class="stat"><span id="statFound">0</span><label>found</label></div>
+        <div class="stat"><span id="statCaptured">0</span><label>captured</label></div>
+        <div class="stat errors"><span id="statErrors">0</span><label>errors</label></div>
+      </div>
+    </div>
+    <div class="progress-bar-track"><div id="progressBar" class="progress-bar-fill"></div></div>
+    <div id="terminal" class="terminal"></div>
+  </section>
+
+  <section id="scan-results" class="panel hidden">
+    <div class="results-header">
+      <h2 id="resultsTitle">Results</h2>
+      <div class="results-actions">
+        <button id="downloadZip">Download All (ZIP)</button>
+        <button id="newScan">New Scan</button>
+      </div>
+    </div>
+    <div id="gallery" class="gallery"></div>
+  </section>
+</main>
+
+<div id="lightbox" class="lightbox hidden">
+  <button id="lightboxClose" class="lightbox-close">&times;</button>
+  <img id="lightboxImg" src="" alt="" />
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

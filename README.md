@@ -6,15 +6,17 @@ Full-page screenshots of an entire website, from a single URL. Free and self-hos
 
 ## Quick start
 
-Requirements: Node.js 18+ and about 650MB free for the bundled Chromium download.
+Requirements: Node.js 18+ and about 270MB free for the bundled Chromium download.
 
 ```bash
 git clone https://github.com/JackB2003/site-screenshot-scanner.git
 cd site-screenshot-scanner
 npm install
-npx playwright install --with-deps chromium
+npx playwright install --with-deps --only-shell chromium
 npm start
 ```
+
+The app only ever runs Chromium headless, so this installs Playwright's slimmed-down headless-shell build (~270MB) instead of the full browser (~650MB) — same screenshots, less disk.
 
 Open `http://localhost:3012`, enter a URL, and watch it go. That's the whole setup.
 

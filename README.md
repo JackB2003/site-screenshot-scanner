@@ -6,7 +6,7 @@ Full-page screenshots of an entire website, from a single URL. Free and self-hos
 
 ## Quick start
 
-Requirements: Node.js 18+ and about 500MB free for the bundled Chromium download.
+Requirements: Node.js 18+ and about 650MB free for the bundled Chromium download.
 
 ```bash
 git clone https://github.com/JackB2003/site-screenshot-scanner.git

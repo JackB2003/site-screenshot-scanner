@@ -302,6 +302,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
 
 .viewport-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 16px;
 }
@@ -398,4 +399,23 @@ button:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
 
 @media (max-width: 600px) {
   .radar-wrap { flex-direction: column; align-items: flex-start; }
+
+  .topbar { padding: 16px 20px; }
+  .container { padding: 24px 14px 60px; }
+  .panel { padding: 20px; }
+
+  .viewports {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .viewports-label { margin-bottom: 2px; }
+
+  .advanced { flex-wrap: wrap; }
+
+  .vtab { padding: 6px 12px; font-size: 11px; }
+
+  .results-header { flex-direction: column; align-items: flex-start; }
+  .results-actions { width: 100%; }
+  .results-actions button { flex: 1; }
 }
